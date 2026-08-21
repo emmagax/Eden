@@ -10,6 +10,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToOne(mappedBy = "user")
+    private Profile profile;
+
     @Column(nullable = false, unique = true)
     private String email;
 

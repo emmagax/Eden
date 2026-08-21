@@ -21,4 +21,18 @@ public class UserController {
     public List<User> getAll() {
         return userRepository.findAll();
     }
+
+    @PutMapping("/{userId}")
+    public User update(
+            @PathVariable Long userId,
+            @RequestBody User updates
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setEmail(updates.getEmail());
+        user.setUsername(updates.getUsername());
+
+        return userRepository.save(user);
+    }
 }
