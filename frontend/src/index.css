@@ -1,0 +1,149 @@
+:root {
+  --font-heading: "Doto Variable", system-ui, sans-serif;
+
+  --font-body:
+    "SUSE Mono Variable", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  font-family: var(--font-body);
+  color: #1f1f1f;
+  background: #f6f4f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+h1,
+h2,
+h3,
+.logo {
+  font-family: var(--font-heading);
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: #ebebeb;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.logo {
+  font-size: 10rem;
+  color: #8cc6ea;
+  margin: 0;
+  padding: 0;
+}
+
+.logo-tight {
+  margin-left: -0.1em;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+}
+
+.login-title {
+  font-size: 2.5rem;
+  margin: 1rem 0 1rem 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+input {
+  width: min(20rem, calc(100vw - 2rem));
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: #f4f4f4;
+  color: #000000;
+}
+input:focus-visible {
+  outline: 2px solid #8cc6ea;
+  outline-offset: 2px;
+}
+
+.sign-in-btn:focus-visible {
+  outline: 2px solid #8cc6ea;
+  outline-offset: 3px;
+}
+
+.sign-in-btn {
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  margin: 2rem;
+
+  display: inline-grid;
+  place-items: center;
+
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  line-height: 1;
+
+  color: #000000;
+  background-color: #f4f4f4;
+
+  border: none;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.sign-in-btn:hover {
+  color: #f4f4f4;
+  background-color: #8cc6ea;
+  transform: scale(1.08);
+}
+
+.sign-in-btn:active {
+  transform: scale(0.98);
+}
+
+.sign-in-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+#register-link {
+  color: #8cc6ea;
+  text-decoration: none;
+}
+
+#register-link:hover {
+  text-decoration: underline;
+}

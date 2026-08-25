@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.emmagax</groupId>
-	<artifactId>coro</artifactId>
+	<artifactId>eden</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>Eden</name>
+	<description>A platform for artists to create profiles and connect.</description>
 	<url/>
 	<licenses>
 		<license/>
