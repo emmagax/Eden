@@ -1,6 +1,8 @@
 package com.emmagax.coro.controller;
 
 
+import com.emmagax.coro.dto.ProfileResponse;
+import com.emmagax.coro.dto.PublicUserResponse;
 import com.emmagax.coro.model.Profile;
 import com.emmagax.coro.model.User;
 import com.emmagax.coro.repository.ProfileRepository;
@@ -25,12 +27,12 @@ public class ProfileController {
     }
 
     @GetMapping
-    public List<Profile> getAll() {
-        return profileRepository.findAll();
+    public List<ProfileResponse> getAll() {
+        return profileRepository.findAll().stream().map(this::toProfileResponse).toList();
     }
 
     @PostMapping("/users/{userId}/profile")
-    public Profile create(
+    public ProfileResponse create(
             @PathVariable Long userId,
             @RequestBody Profile profile
     ) {
@@ -38,11 +40,12 @@ public class ProfileController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         profile.setUser(user);
-        return profileRepository.save(profile);
+        Profile savedProfile = profileRepository.save(profile);
+        return toProfileResponse(savedProfile);
     }
 
     @PutMapping("/{profileId}")
-    public Profile update(
+    public ProfileResponse update(
             @PathVariable Long profileId,
             @RequestBody Profile updates
     ) {
@@ -53,8 +56,18 @@ public class ProfileController {
         profile.setPronouns(updates.getPronouns());
         profile.setZone(updates.getZone());
         profile.setBio(updates.getBio());
+        Profile savedProfile = profileRepository.save(profile);
+        return toProfileResponse(savedProfile);
+    }
 
-        return profileRepository.save(profile);
+    private ProfileResponse toProfileResponse(Profile profile) {
+        User user = profile.getUser();
+
+        PublicUserResponse publicUser = new PublicUserResponse(
+                user.getId(),
+                user.getUsername()
+        );
+        return new ProfileResponse(profile.getId(), profile.getArtistName(), profile.getPronouns(), profile.getZone(), profile.getBio(), publicUser);
     }
 
 }

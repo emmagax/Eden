@@ -1,8 +1,12 @@
 package com.emmagax.coro.controller;
 
 import com.emmagax.coro.dto.LoginRequest;
+import com.emmagax.coro.dto.RegisterRequest;
+import com.emmagax.coro.dto.RegisterResponse;
+import com.emmagax.coro.exception.DuplicateAccountFieldException;
 import com.emmagax.coro.model.User;
 import com.emmagax.coro.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +26,33 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public User register(@RequestBody User user) {
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
+    public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
+
+        if (userRepository.existsByEmail(request.email())) {
+            throw new DuplicateAccountFieldException(
+                    "EMAIL_ALREADY_EXISTS",
+                    "email",
+                    "An account with this email already exists"
+            );
+        }
+        if (userRepository.existsByUsername(request.username())) {
+            throw new DuplicateAccountFieldException(
+                    "USERNAME_ALREADY_EXISTS",
+                    "username",
+                    "This username is already taken"
+            );
+        }
+
+        User user = new User();
+
+        user.setEmail(request.email());
+        user.setUsername(request.username());
+
+        String hashedPassword = passwordEncoder.encode(request.password());
         user.setPassword(hashedPassword);
-        return userRepository.save(user);
+
+        User savedUser = userRepository.save(user);
+        return new RegisterResponse(savedUser.getId(), savedUser.getEmail(), savedUser.getUsername());
     }
 
     @PostMapping("/login")
