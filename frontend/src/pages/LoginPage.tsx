@@ -15,56 +15,58 @@ function LoginPage() {
 
   return (
     <main>
-      <section aria-labelledby="login-title">
+      <section className="header">
+        <div className="text-logo" aria-label="Eden">
+          <h1>EDEN</h1>
+        </div>
+      </section>
+      <section className="auth-panel" aria-labelledby="login-title">
         <header>
-          <div className="logo" role="img" aria-label="Eden">
-            <span aria-hidden="true">
-              {"{*"}
-              <span className="logo-tight">{"}"}</span>
-            </span>
-          </div>
-          <h1 id="login-title" className="login-title">
+          {/*  */}
+          <h1 id="login-title" className="auth-title">
             Sign in
           </h1>
         </header>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div>
-            <label className="visually-hidden" htmlFor="identifier">
-              Email or username
-            </label>
-            <br />
-            <input
-              id="identifier"
-              name="identifier"
-              type="text"
-              autoComplete="username"
-              required
-              placeholder="e-mail or username"
-              value={identifier}
-              onChange={(event) => setIdentifier(event.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <label className="visually-hidden" htmlFor="identifier">
+            Email or username
+          </label>
+          <br />
+          <input
+            id="identifier"
+            name="identifier"
+            type="text"
+            autoComplete="username"
+            required
+            placeholder="e-mail or username"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+          />
 
-          <div>
-            <label className="visually-hidden" htmlFor="password">
-              Password
-            </label>
-            <br />
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
+          <label className="visually-hidden" htmlFor="password">
+            Password
+          </label>
+          <br />
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <br />
+          <div className="forgot-password">
+            <Link id="forgot-password-link" to="/forgot-password">
+              Forgot password?
+            </Link>
           </div>
 
           <button
-            className="sign-in-btn"
+            className="submit-button"
             type="submit"
             disabled={!canSubmit}
             aria-label="Sign in"
@@ -73,9 +75,9 @@ function LoginPage() {
           </button>
         </form>
 
-        <p>
+        <p className="footer-text">
           Don&apos;t have an account? <br />
-          <Link id="register-link" to="/register">
+          <Link id="auth-link" to="/register">
             Create an account
           </Link>
         </p>
