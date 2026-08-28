@@ -80,7 +80,7 @@ a {
   font-size: 0.9rem;
   color: #ffffff;
   margin: 0;
-  padding:;
+  padding: 0;
   display: inline-grid;
   place-items: center;
 }
@@ -91,6 +91,7 @@ a {
   padding: 0.1rem 0.3rem;
   line-height: 1;
 }
+
 .logo-tight {
   margin-left: -0.1em;
 }
@@ -162,7 +163,7 @@ a {
   /*
    * Used during random flight.
    */
-  transition: transform 4000ms steps(12, end);
+  transition: transform 4000ms steps(24, end);
 }
 
 .flying-logo--paused {
@@ -180,10 +181,11 @@ a {
 .header {
   position: absolute;
   top: 0rem;
-  left: 1rem;
+  left: 0rem;
+  right: 0rem;
 
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: start;
   margin: 0;
   padding: 0;

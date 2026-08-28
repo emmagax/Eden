@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const EDGE_MARGIN = 16;
 const PANEL_CLEARANCE = 48;
 
 // Flight Physics
-const MOVE_INTERVAL = 4200;
+const MOVE_INTERVAL = 4000;
 const MAX_RANDOM_ATTEMPTS = 50;
 const PATH_STEPS = 24;
 
@@ -21,8 +21,8 @@ type Position = {
 };
 
 const INITIAL_POSITION: Position = {
-  x: EDGE_MARGIN,
-  y: EDGE_MARGIN,
+  x: 0,
+  y: 0,
 };
 
 function clamp(value: number, minimum: number, maximum: number) {
@@ -103,6 +103,32 @@ function FlyingLogo() {
   const [isPaused, setIsPaused] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
 
+  useLayoutEffect(() => {
+    const logo = logoRef.current;
+
+    if (!logo) return;
+
+    const x = (window.innerWidth - logo.offsetWidth) / 2;
+
+    logo.style.transition = "none";
+    logo.style.transform = `translate(${x}px, ${EDGE_MARGIN}px)`;
+
+    positionRef.current = {
+      x,
+      y: EDGE_MARGIN,
+    };
+
+    setPosition({
+      x,
+      y: EDGE_MARGIN,
+    });
+
+    // Force the centered position to be applied before restoring movement.
+    void logo.offsetWidth;
+
+    logo.style.removeProperty("transition");
+  }, []);
+
   useEffect(() => {
     function rememberPointerPosition(event: PointerEvent) {
       pointerPositionRef.current = {
@@ -182,8 +208,6 @@ function FlyingLogo() {
     }
 
     moveRandomlyRef.current = moveToRandomPosition;
-
-    moveToRandomPosition();
 
     const intervalId = window.setInterval(moveToRandomPosition, MOVE_INTERVAL);
 
