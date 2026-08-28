@@ -312,7 +312,7 @@ input:focus-visible::placeholder {
 .confirm-password-field {
   position: relative;
   width: 100%;
-  margin: -0rem 0 0 0;
+  margin: 0.5rem 0 0 0;
   padding: 0;
 }
 

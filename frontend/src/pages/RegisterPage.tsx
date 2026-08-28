@@ -105,7 +105,6 @@ function RegisterPage() {
             >
               Confirm password
             </label>
-            <br />
 
             <input
               id="register-confirm-password"

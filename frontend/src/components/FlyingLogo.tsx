@@ -3,17 +3,12 @@ import { useEffect, useRef, useState } from "react";
 const EDGE_MARGIN = 16;
 const PANEL_CLEARANCE = 48;
 
-/*
- * Random flight lasts 4000ms in CSS.
- * A new destination is selected after 4200ms.
- */
+// Flight Physics
 const MOVE_INTERVAL = 4200;
 const MAX_RANDOM_ATTEMPTS = 50;
 const PATH_STEPS = 24;
 
-/*
- * Mouse-following physics.
- */
+// Mouse Following Physics
 const FOLLOW_TICK = 180;
 const STEERING_STRENGTH = 1;
 const VELOCITY_DRAG = 0.5;
@@ -47,11 +42,8 @@ function overlapsPanel(
   const logoBottom = y + logoHeight;
 
   const panelLeft = panelRect.left - PANEL_CLEARANCE;
-
   const panelRight = panelRect.right + PANEL_CLEARANCE;
-
   const panelTop = panelRect.top - PANEL_CLEARANCE;
-
   const panelBottom = panelRect.bottom + PANEL_CLEARANCE;
 
   return (
@@ -71,9 +63,7 @@ function pathOverlapsPanel(
 ) {
   for (let step = 1; step <= PATH_STEPS; step++) {
     const progress = step / PATH_STEPS;
-
     const x = start.x + (destination.x - start.x) * progress;
-
     const y = start.y + (destination.y - start.y) * progress;
 
     if (overlapsPanel(x, y, logoWidth, logoHeight, panelRect)) {
@@ -100,34 +90,19 @@ function getVisualPosition(element: HTMLElement): Position {
 
 function FlyingLogo() {
   const logoRef = useRef<HTMLButtonElement>(null);
-
   const positionRef = useRef<Position>(INITIAL_POSITION);
-
   const velocityRef = useRef<Position>({
     x: 0,
     y: 0,
   });
-
   const pointerPositionRef = useRef<Position | null>(null);
-
   const pausedRef = useRef(false);
   const followingRef = useRef(false);
-
-  /*
-   * Allows the hover handlers to request a new random
-   * target without recreating the movement effect.
-   */
   const moveRandomlyRef = useRef<() => void>(() => {});
-
   const [position, setPosition] = useState<Position>(INITIAL_POSITION);
-
   const [isPaused, setIsPaused] = useState(false);
-
   const [isFollowing, setIsFollowing] = useState(false);
 
-  /*
-   * Always remember the latest pointer position.
-   */
   useEffect(() => {
     function rememberPointerPosition(event: PointerEvent) {
       pointerPositionRef.current = {
@@ -143,14 +118,7 @@ function FlyingLogo() {
     };
   }, []);
 
-  /*
-   * Wander mode:
-   *
-   * - Select random destinations.
-   * - Avoid the authentication panel.
-   * - Stop while following.
-   * - Stop while paused.
-   */
+  // Wander Mode
   useEffect(() => {
     const reducedMotionPreference = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -230,14 +198,7 @@ function FlyingLogo() {
     };
   }, []);
 
-  /*
-   * Follow mode:
-   *
-   * - Follow the current pointer position.
-   * - Use acceleration and velocity.
-   * - Do not use auth-panel collision.
-   * - Remain inside the viewport.
-   */
+  // Follow Mode
   useEffect(() => {
     if (!isFollowing) {
       velocityRef.current = {
@@ -262,10 +223,6 @@ function FlyingLogo() {
       return;
     }
 
-    /*
-     * Begin following from the logo's current visible
-     * position, not its old random destination.
-     */
     const visualPosition = getVisualPosition(logo);
 
     positionRef.current = visualPosition;
@@ -274,7 +231,6 @@ function FlyingLogo() {
 
     const intervalId = window.setInterval(() => {
       const pointer = pointerPositionRef.current;
-
       const currentLogo = logoRef.current;
 
       if (!pointer || !currentLogo) {
@@ -282,11 +238,8 @@ function FlyingLogo() {
       }
 
       const logoWidth = currentLogo.offsetWidth;
-
       const logoHeight = currentLogo.offsetHeight;
-
       const maximumX = window.innerWidth - logoWidth - EDGE_MARGIN;
-
       const maximumY = window.innerHeight - logoHeight - EDGE_MARGIN;
 
       if (maximumX <= EDGE_MARGIN || maximumY <= EDGE_MARGIN) {
@@ -294,44 +247,22 @@ function FlyingLogo() {
       }
 
       const current = positionRef.current;
-
       const velocity = velocityRef.current;
-
       const logoCenterX = current.x + logoWidth / 2;
-
       const logoCenterY = current.y + logoHeight / 2;
 
-      /*
-       * The pointer is an attraction point.
-       */
       const distanceX = pointer.x - logoCenterX;
-
       const distanceY = pointer.y - logoCenterY;
 
-      /*
-       * Accelerate toward the pointer.
-       */
       velocity.x += distanceX * STEERING_STRENGTH;
-
       velocity.y += distanceY * STEERING_STRENGTH;
 
-      /*
-       * Add a small amount of random motion so the
-       * follower still looks like it is flying.
-       */
       velocity.x += (Math.random() - 0.5) * WANDER_STRENGTH;
-
       velocity.y += (Math.random() - 0.5) * WANDER_STRENGTH;
 
-      /*
-       * Apply inertia/air resistance.
-       */
       velocity.x *= VELOCITY_DRAG;
       velocity.y *= VELOCITY_DRAG;
 
-      /*
-       * Limit the maximum speed.
-       */
       const speed = Math.hypot(velocity.x, velocity.y);
 
       if (speed > MAX_FOLLOW_SPEED) {
@@ -342,16 +273,10 @@ function FlyingLogo() {
       }
 
       const requestedX = current.x + velocity.x;
-
       const requestedY = current.y + velocity.y;
-
       const nextX = clamp(requestedX, EDGE_MARGIN, maximumX);
-
       const nextY = clamp(requestedY, EDGE_MARGIN, maximumY);
 
-      /*
-       * Bounce gently at viewport boundaries.
-       */
       if (nextX !== requestedX) {
         velocity.x *= -0.5;
       }
@@ -380,13 +305,7 @@ function FlyingLogo() {
     };
   }, [isFollowing]);
 
-  /*
-   * Hover pause applies only during wander mode.
-   *
-   * It cannot apply while following because the logo
-   * will eventually reach the pointer and immediately
-   * pause itself.
-   */
+  // Hover Pause
   function handlePointerEnter() {
     if (followingRef.current) {
       return;
@@ -402,12 +321,7 @@ function FlyingLogo() {
 
     const visualPosition = getVisualPosition(logo);
 
-    /*
-     * Freeze both the transition and transform
-     * synchronously before React rerenders.
-     */
     logo.style.transition = "none";
-
     logo.style.transform = `translate(${visualPosition.x}px, ${visualPosition.y}px)`;
 
     positionRef.current = visualPosition;
@@ -430,21 +344,12 @@ function FlyingLogo() {
       logo.style.removeProperty("transition");
     }
 
-    /*
-     * Resume random flight immediately rather than
-     * waiting for the next interval.
-     */
     window.setTimeout(() => {
       moveRandomlyRef.current();
     }, 0);
   }
 
-  /*
-   * Toggle:
-   *
-   * wander -> follow
-   * follow -> wander
-   */
+  // Toggle between Wander and Follow mode
   function handleLogoClick() {
     const shouldFollow = !followingRef.current;
 
@@ -459,17 +364,9 @@ function FlyingLogo() {
     }
 
     if (shouldFollow) {
-      /*
-       * The click began while the logo was hovered and
-       * paused. Following must resume movement.
-       */
       pausedRef.current = false;
       setIsPaused(false);
     } else {
-      /*
-       * After the second click, the pointer remains
-       * over the logo. Pause until pointerleave.
-       */
       pausedRef.current = true;
       setIsPaused(true);
     }
@@ -477,9 +374,7 @@ function FlyingLogo() {
 
   const logoClassName = [
     "flying-logo",
-
     isPaused ? "flying-logo--paused" : "",
-
     isFollowing ? "flying-logo--following" : "",
   ]
     .filter(Boolean)
