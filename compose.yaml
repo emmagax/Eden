@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: eden
+      POSTGRES_USER: eden
+      POSTGRES_PASSWORD: eden_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - eden-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eden -d eden"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  eden-postgres-data:
