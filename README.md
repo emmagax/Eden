@@ -49,14 +49,16 @@ On Windows PowerShell:
 The backend listens on `http://localhost:8080` by default. To run its tests:
 
 ```sh
-./mvnw test -Dspring.profiles.active=local
+./mvnw test
 ```
 
 On Windows PowerShell:
 
 ```powershell
-.\mvnw.cmd test "-Dspring.profiles.active=local"
+.\mvnw.cmd test
 ```
+
+Backend tests use Testcontainers to start a temporary PostgreSQL database. Docker Desktop must be running, but the local Compose database does not need to be started.
 
 ### Frontend
 
@@ -67,6 +69,22 @@ npm run dev
 ```
 
 Vite prints the local URL when it starts, normally `http://localhost:5173`.
+
+### Frontend tests
+
+Run the frontend tests once:
+
+```bash
+npm test
+```
+
+Run tests continuously while developing:
+
+```bash
+npm run test:watch
+```
+
+Frontend component tests use Vitest, jsdom, and React Testing Library. API tests use MSW to intercept network requests without requiring the backend to be running.
 
 ## Stop the local database
 
@@ -87,7 +105,8 @@ The deployed application continues to use the hosted Supabase PostgreSQL databas
 1. Run `docker compose ps` and confirm that PostgreSQL is healthy.
 2. Start the backend with the `local` profile and confirm it connects to `jdbc:postgresql://localhost:5432/eden`.
 3. Start the frontend and open the local URL shown by Vite.
-4. Run `npm run lint` and `npm run build` from `frontend` before opening a pull request.
+4. Run `npm run lint`, `npm run build`, and `npm test` from `frontend` before opening a pull request.
+5. Run `./mvnw test` from the project root with Docker Desktop running.
 
 ## Troubleshooting
 
