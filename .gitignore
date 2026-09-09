@@ -34,4 +34,5 @@ build/
 
 ### Local environment configuration ###
 .env
-.env.local
+.env.*
+!.env.example
