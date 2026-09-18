@@ -4,6 +4,10 @@ import com.emmagax.eden.dto.AuthUserResponse;
 import com.emmagax.eden.dto.LoginRequest;
 import com.emmagax.eden.dto.RegisterRequest;
 import com.emmagax.eden.dto.RegisterResponse;
+import com.emmagax.eden.dto.AuthTokenResponse;
+import com.emmagax.eden.dto.ConfirmEmailVerificationRequest;
+import com.emmagax.eden.dto.ConfirmPasswordResetRequest;
+import com.emmagax.eden.dto.PasswordResetRequest;
 import com.emmagax.eden.exception.DuplicateAccountFieldException;
 import com.emmagax.eden.model.User;
 import com.emmagax.eden.repository.UserRepository;
@@ -23,6 +27,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.GetMapping;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/auth")
@@ -109,5 +120,98 @@ public class AuthController {
     SecurityContextHolder.clearContext();
 
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/email-verification/request")
+  public AuthTokenResponse requestEmailVerification(Authentication authentication) {
+    User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+
+    String token = generateToken();
+
+    user.setEmailVerificationTokenHash(hashToken(token));
+    user.setEmailVerificationTokenExpiresAt(LocalDateTime.now().plusHours(24));
+
+    userRepository.save(user);
+
+    return new AuthTokenResponse(token);
+  }
+
+  @PostMapping("/email-verification/confirm")
+  public ResponseEntity<Void> confirmEmailVerification(
+      @Valid @RequestBody ConfirmEmailVerificationRequest request) {
+    String tokenHash = hashToken(request.token());
+
+    User user = userRepository.findByEmailVerificationTokenHash(tokenHash)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
+
+    if (isExpired(user.getEmailVerificationTokenExpiresAt())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
+    }
+
+    user.setEmailVerified(true);
+    user.setEmailVerificationTokenHash(null);
+    user.setEmailVerificationTokenExpiresAt(null);
+
+    userRepository.save(user);
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/password-reset/request")
+  public AuthTokenResponse requestPasswordReset(
+      @Valid @RequestBody PasswordResetRequest request) {
+    User user = userRepository.findByEmail(request.identifier())
+        .or(() -> userRepository.findByUsername(request.identifier()))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid account"));
+
+    String token = generateToken();
+
+    user.setPasswordResetTokenHash(hashToken(token));
+    user.setPasswordResetTokenExpiresAt(LocalDateTime.now().plusHours(1));
+
+    userRepository.save(user);
+
+    return new AuthTokenResponse(token);
+  }
+
+  @PostMapping("/password-reset/confirm")
+  public ResponseEntity<Void> confirmPasswordReset(
+      @Valid @RequestBody ConfirmPasswordResetRequest request) {
+    String tokenHash = hashToken(request.token());
+
+    User user = userRepository.findByPasswordResetTokenHash(tokenHash)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
+
+    if (isExpired(user.getPasswordResetTokenExpiresAt())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
+    }
+
+    user.setPassword(passwordEncoder.encode(request.newPassword()));
+    user.setPasswordResetTokenHash(null);
+    user.setPasswordResetTokenExpiresAt(null);
+
+    userRepository.save(user);
+
+    return ResponseEntity.noContent().build();
+  }
+
+  private String generateToken() {
+    byte[] bytes = new byte[32];
+    new SecureRandom().nextBytes(bytes);
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+  }
+
+  private String hashToken(String token) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(token.getBytes());
+      return Base64.getEncoder().encodeToString(hash);
+    } catch (Exception exception) {
+      throw new IllegalStateException("Unable to hash token", exception);
+    }
+  }
+
+  private boolean isExpired(LocalDateTime expiresAt) {
+    return expiresAt == null || expiresAt.isBefore(LocalDateTime.now());
   }
 }
