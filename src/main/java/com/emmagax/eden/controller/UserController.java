@@ -4,6 +4,9 @@ import com.emmagax.eden.model.User;
 import com.emmagax.eden.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import com.emmagax.eden.dto.UpdateUserRequest;
+import com.emmagax.eden.dto.UserResponse;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -11,28 +14,33 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+  private final UserRepository userRepository;
 
-    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-    }
+  public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    this.userRepository = userRepository;
+  }
 
-    @GetMapping
-    public List<User> getAll() {
-        return userRepository.findAll();
-    }
+  @GetMapping
+  public List<UserResponse> getAll() {
+    return userRepository.findAll().stream().map(this::toUserResponse).toList();
+  }
 
-    @PutMapping("/{userId}")
-    public User update(
-            @PathVariable Long userId,
-            @RequestBody User updates
-    ) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+  @PutMapping("/{userId}")
+  public UserResponse update(
+      @PathVariable Long userId,
+      @Valid @RequestBody UpdateUserRequest request) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setEmail(updates.getEmail());
-        user.setUsername(updates.getUsername());
+    user.setEmail(request.email());
+    user.setUsername(request.username());
 
-        return userRepository.save(user);
-    }
+    User savedUser = userRepository.save(user);
+    return toUserResponse(savedUser);
+
+  }
+
+  private UserResponse toUserResponse(User user) {
+    return new UserResponse(user.getId(), user.getEmail(), user.getUsername());
+  }
 }
