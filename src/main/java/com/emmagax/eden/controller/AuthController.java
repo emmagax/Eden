@@ -21,79 +21,93 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+  private final AuthenticationManager authenticationManager;
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
 
-    public AuthController(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager
-    ) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
+  public AuthController(
+      UserRepository userRepository,
+      PasswordEncoder passwordEncoder,
+      AuthenticationManager authenticationManager) {
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.authenticationManager = authenticationManager;
+  }
+
+  @PostMapping("/register")
+  public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
+    if (userRepository.existsByEmail(request.email())) {
+      throw new DuplicateAccountFieldException(
+          "EMAIL_ALREADY_EXISTS",
+          "email",
+          "An account with this email already exists");
     }
 
-    @PostMapping("/register")
-    public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new DuplicateAccountFieldException(
-                    "EMAIL_ALREADY_EXISTS",
-                    "email",
-                    "An account with this email already exists"
-            );
-        }
-
-        if (userRepository.existsByUsername(request.username())) {
-            throw new DuplicateAccountFieldException(
-                    "USERNAME_ALREADY_EXISTS",
-                    "username",
-                    "This username is already taken"
-            );
-        }
-
-        User user = new User();
-        user.setEmail(request.email());
-        user.setUsername(request.username());
-        user.setPassword(passwordEncoder.encode(request.password()));
-
-        User savedUser = userRepository.save(user);
-        return new RegisterResponse(savedUser.getId(), savedUser.getEmail(), savedUser.getUsername());
+    if (userRepository.existsByUsername(request.username())) {
+      throw new DuplicateAccountFieldException(
+          "USERNAME_ALREADY_EXISTS",
+          "username",
+          "This username is already taken");
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<AuthUserResponse> login(
-            @Valid @RequestBody LoginRequest loginRequest,
-            HttpServletRequest request
-    ) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getIdentifier(),
-                        loginRequest.getPassword()
-                )
-        );
+    User user = new User();
+    user.setEmail(request.email());
+    user.setUsername(request.username());
+    user.setPassword(passwordEncoder.encode(request.password()));
 
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
+    User savedUser = userRepository.save(user);
+    return new RegisterResponse(savedUser.getId(), savedUser.getEmail(), savedUser.getUsername());
+  }
 
-        request.getSession(true).setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                context
-        );
+  @PostMapping("/login")
+  public ResponseEntity<AuthUserResponse> login(
+      @Valid @RequestBody LoginRequest loginRequest,
+      HttpServletRequest request) {
+    Authentication authentication = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(
+            loginRequest.getIdentifier(),
+            loginRequest.getPassword()));
 
-        User user = userRepository.findByEmail(loginRequest.getIdentifier())
-                .or(() -> userRepository.findByUsername(loginRequest.getIdentifier()))
-                .orElseThrow();
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(authentication);
+    SecurityContextHolder.setContext(context);
 
-        return ResponseEntity.ok(
-                new AuthUserResponse(user.getId(), user.getEmail(), user.getUsername())
-        );
+    request.getSession(true).setAttribute(
+        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+        context);
+
+    User user = userRepository.findByEmail(loginRequest.getIdentifier())
+        .or(() -> userRepository.findByUsername(loginRequest.getIdentifier()))
+        .orElseThrow();
+
+    return ResponseEntity.ok(
+        new AuthUserResponse(user.getId(), user.getEmail(), user.getUsername()));
+  }
+
+  @GetMapping("/me")
+  public AuthUserResponse me(Authentication authentication) {
+    User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+
+    return new AuthUserResponse(user.getId(), user.getEmail(), user.getUsername());
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(HttpServletRequest request) {
+    HttpSession session = request.getSession(false);
+
+    if (session != null) {
+      session.invalidate();
     }
+
+    SecurityContextHolder.clearContext();
+
+    return ResponseEntity.noContent().build();
+  }
 }
