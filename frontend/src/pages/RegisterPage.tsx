@@ -1,5 +1,6 @@
 import { useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
+import { register, type AuthUser } from "../api/auth";
 import "../index.css";
 
 function RegisterPage() {
@@ -7,6 +8,9 @@ function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [createdUser, setCreatedUser] = useState<AuthUser | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const passwordsMatch = password === confirmPassword;
 
@@ -17,20 +21,32 @@ function RegisterPage() {
     username.trim().length >= 3 &&
     password.length >= 8 &&
     confirmPassword.length > 0 &&
-    passwordsMatch;
+    passwordsMatch &&
+    !isSubmitting;
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!canSubmit) {
       return;
     }
 
-    console.log({
-      email: email.trim(),
-      username: username.trim(),
-      password,
-    });
+    setErrorMessage("");
+    setCreatedUser(null);
+    setIsSubmitting(true);
+
+    try {
+      const user = await register({
+        email: email.trim(),
+        username: username.trim(),
+        password,
+      });
+      setCreatedUser(user);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to create account.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -134,13 +150,25 @@ function RegisterPage() {
             )}
           </div>
 
+          {errorMessage && (
+            <p className="form-message error-message" role="alert">
+              {errorMessage}
+            </p>
+          )}
+
+          {createdUser && (
+            <p className="form-message success-message" role="status">
+              Account created for {createdUser.username}. You can now sign in.
+            </p>
+          )}
+
           <button
             className="submit-button"
             type="submit"
             disabled={!canSubmit}
             aria-label="Create account"
           >
-            {">"}
+            {isSubmitting ? "..." : ">"}
           </button>
         </form>
 
