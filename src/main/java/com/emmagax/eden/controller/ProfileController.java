@@ -41,9 +41,14 @@ public class ProfileController {
     Profile profile = new Profile();
     profile.setUser(user);
     profile.setArtistName(request.artistName());
+    profile.setHandle(request.handle());
     profile.setPronouns(request.pronouns());
     profile.setZone(request.zone());
     profile.setBio(request.bio());
+    profile.setRoles(request.roles());
+    profile.setGenres(request.genres());
+    profile.setScene(request.scene());
+    profile.setAvatarUrl(request.avatarUrl());
 
     Profile savedProfile = profileRepository.save(profile);
     return toProfileResponse(savedProfile);
@@ -57,9 +62,15 @@ public class ProfileController {
         .orElseThrow(() -> new RuntimeException("Profile not found"));
 
     profile.setArtistName(request.artistName());
+    profile.setHandle(request.handle());
     profile.setPronouns(request.pronouns());
     profile.setZone(request.zone());
     profile.setBio(request.bio());
+    profile.setRoles(request.roles());
+    profile.setGenres(request.genres());
+    profile.setScene(request.scene());
+    profile.setAvatarUrl(request.avatarUrl());
+    profile.setOnboardingComplete(request.onboardingComplete());
     Profile savedProfile = profileRepository.save(profile);
     return toProfileResponse(savedProfile);
   }
@@ -70,8 +81,19 @@ public class ProfileController {
     PublicUserResponse publicUser = new PublicUserResponse(
         user.getId(),
         user.getUsername());
-    return new ProfileResponse(profile.getId(), profile.getArtistName(), profile.getPronouns(), profile.getZone(),
-        profile.getBio(), publicUser);
+    return new ProfileResponse(
+        profile.getId(),
+        profile.getArtistName(),
+        profile.getHandle(),
+        profile.getPronouns(),
+        profile.getZone(),
+        profile.getBio(),
+        profile.getRoles(),
+        profile.getGenres(),
+        profile.getScene(),
+        profile.getAvatarUrl(),
+        profile.isOnboardingComplete(),
+        publicUser);
   }
 
 }

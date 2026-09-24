@@ -77,9 +77,15 @@ public class ConnectionRequestController {
         return new ProfileResponse(
                 profile.getId(),
                 profile.getArtistName(),
+                profile.getHandle(),
                 profile.getPronouns(),
                 profile.getZone(),
                 profile.getBio(),
+                profile.getRoles(),
+                profile.getGenres(),
+                profile.getScene(),
+                profile.getAvatarUrl(),
+                profile.isOnboardingComplete(),
                 publicUser
         );
     }
