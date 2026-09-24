@@ -8,8 +8,6 @@ import com.emmagax.eden.dto.UpdateUserRequest;
 import com.emmagax.eden.dto.UserResponse;
 import jakarta.validation.Valid;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -18,11 +16,6 @@ public class UserController {
 
   public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
     this.userRepository = userRepository;
-  }
-
-  @GetMapping
-  public List<UserResponse> getAll() {
-    return userRepository.findAll().stream().map(this::toUserResponse).toList();
   }
 
   @PutMapping("/{userId}")
