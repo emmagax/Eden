@@ -86,7 +86,7 @@ a {
 }
 
 .text-logo h1 {
-  background-color: #8cc6ea;
+  background-color: #0000EE;
   font-size: 2rem;
   padding: 0.1rem 0.3rem;
   line-height: 1;
@@ -232,7 +232,7 @@ input:focus-visible {
   outline: none;
 }
 input:focus-visible::placeholder {
-  color: #8cc6ea;
+  color: #0000EE;
 }
 
 .submit-button:focus-visible {
@@ -271,7 +271,7 @@ input:focus-visible::placeholder {
 
 .submit-button:hover {
   color: #f4f4f4;
-  background-color: #8cc6ea;
+  background-color: #0000EE;
   transform: scale(1.08);
 }
 
@@ -293,7 +293,7 @@ input:focus-visible::placeholder {
 }
 
 #auth-link {
-  color: #8cc6ea;
+  color: #0000EE;
   text-decoration: none;
 }
 
@@ -303,7 +303,7 @@ input:focus-visible::placeholder {
 
 #forgot-password-link {
   font-size: 0.8rem;
-  color: #8cc6ea;
+  color: #0000EE;
   text-decoration: none;
 }
 
