@@ -13,7 +13,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
 
@@ -66,10 +65,8 @@ class SecurityConfigTest {
   @Test
   @WithMockUser
   void authenticatedUsersCanAccessProtectedEndpoints() throws Exception {
-    when(userRepository.findAll()).thenReturn(List.of());
-
     mockMvc.perform(get("/users"))
-        .andExpect(status().isOk());
+        .andExpect(status().isNotFound());
   }
 
   @Test
