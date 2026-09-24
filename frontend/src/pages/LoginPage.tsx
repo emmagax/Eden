@@ -1,15 +1,36 @@
 import { useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
+import { login, type AuthUser } from "../api/auth";
+
 function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const canSubmit = identifier.trim().length > 0 && password.length > 0;
+  const [errorMessage, setErrorMessage] = useState("");
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const canSubmit = identifier.trim().length > 0 && password.length > 0 && !isSubmitting;
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!canSubmit) {
       return;
+    }
+
+    setErrorMessage("");
+    setCurrentUser(null);
+    setIsSubmitting(true);
+
+    try {
+      const user = await login({
+        identifier: identifier.trim(),
+        password,
+      });
+      setCurrentUser(user);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to sign in.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -65,13 +86,25 @@ function LoginPage() {
             </Link>
           </div>
 
+          {errorMessage && (
+            <p className="form-message error-message" role="alert">
+              {errorMessage}
+            </p>
+          )}
+
+          {currentUser && (
+            <p className="form-message success-message" role="status">
+              Signed in as {currentUser.username}.
+            </p>
+          )}
+
           <button
             className="submit-button"
             type="submit"
             disabled={!canSubmit}
             aria-label="Sign in"
           >
-            {">"}
+            {isSubmitting ? "..." : ">"}
           </button>
         </form>
 

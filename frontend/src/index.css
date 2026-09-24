@@ -334,6 +334,22 @@ input:focus-visible::placeholder {
   text-align: left;
 }
 
+.form-message {
+  width: 100%;
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.25rem;
+  text-align: left;
+}
+
+.error-message {
+  color: #b42318;
+}
+
+.success-message {
+  color: #027a48;
+}
+
 #root {
   min-height: 100vh;
   isolation: isolate;
