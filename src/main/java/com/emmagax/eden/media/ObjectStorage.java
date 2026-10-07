@@ -11,4 +11,5 @@ public interface ObjectStorage {
   Metadata metadata(String key);
   void download(String key, Path target, long maximumBytes) throws Exception;
   void upload(String key, Path source, String contentType);
+  String signDownload(String key);
 }

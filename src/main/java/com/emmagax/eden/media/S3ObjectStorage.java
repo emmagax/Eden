@@ -66,5 +66,9 @@ public class S3ObjectStorage implements ObjectStorage {
   public void upload(String key, Path source, String contentType) {
     client.putObject(PutObjectRequest.builder().bucket(bucket).key(key).contentType(contentType).build(), RequestBody.fromFile(source));
   }
+  public String signDownload(String key) {
+    return signer.presignGetObject(GetObjectPresignRequest.builder().signatureDuration(Duration.ofMinutes(5))
+        .getObjectRequest(GetObjectRequest.builder().bucket(bucket).key(key).build()).build()).url().toString();
+  }
   @PreDestroy public void close() { client.close(); signer.close(); }
 }

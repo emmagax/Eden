@@ -62,6 +62,8 @@ class MediaIntegrationTest {
   @Test void completionAndPlaybackRequireOwnerAndReadyState() throws Exception {
     User owner = account(), other = account(); var asset = asset(owner);
     mvc.perform(post("/media/" + asset.id() + "/complete").with(user(other.getUsername())).with(csrf())).andExpect(status().isNotFound());
+    mvc.perform(get("/media/" + asset.id() + "/playback").with(user(other.getUsername()))).andExpect(status().isNotFound());
+    mvc.perform(get("/media/" + asset.id() + "/playback").with(user(owner.getUsername()))).andExpect(status().isConflict());
     when(storage.metadata(asset.uploadKey())).thenReturn(new ObjectStorage.Metadata(17, "audio/wav"));
     mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf())).andExpect(status().isBadRequest());
     assertEquals("UPLOADING", repository.find(asset.id()).orElseThrow().state());
@@ -71,6 +73,9 @@ class MediaIntegrationTest {
     mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf())).andExpect(status().isOk());
     var claimed = repository.claim().orElseThrow();
     assertTrue(repository.ready(claimed, "processed/stream", null, 10));
+    when(storage.signDownload("processed/stream")).thenReturn("https://storage.test/playback");
+    mvc.perform(get("/media/" + asset.id() + "/playback").with(user(owner.getUsername())))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.streamUrl").value("https://storage.test/playback"));
   }
   @Test void leasesFenceStaleWorkersAndRetriesAreBounded() {
     var asset = asset(account()); assertTrue(repository.queue(asset.id())); assertFalse(repository.queue(asset.id()));

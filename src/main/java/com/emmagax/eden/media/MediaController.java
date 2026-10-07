@@ -23,6 +23,7 @@ public class MediaController {
       @Min(5) @Max(60) Integer previewSeconds) {}
   public record UploadResponse(UUID id, String uploadUrl, Map<String, List<String>> headers, int expiresInSeconds) {}
   public record StatusResponse(UUID id, String state, String failureCode, Double durationSeconds) {}
+  public record PlaybackResponse(String streamUrl, String previewUrl, int expiresInSeconds) {}
   private final MediaRepository repository;
   private final ObjectStorage storage;
   private final AccountAccess access;
@@ -57,6 +58,13 @@ public class MediaController {
   }
   @GetMapping("/{id}")
   public StatusResponse get(@PathVariable UUID id, Authentication authentication) { return status(owned(id, authentication)); }
+  @GetMapping("/{id}/playback")
+  public PlaybackResponse playback(@PathVariable UUID id, Authentication authentication) {
+    var asset = owned(id, authentication);
+    if (!asset.state().equals("READY")) throw new ResponseStatusException(HttpStatus.CONFLICT, "Audio is not ready");
+    return new PlaybackResponse(storage.signDownload(asset.streamKey()),
+        asset.previewKey() == null ? null : storage.signDownload(asset.previewKey()), 300);
+  }
   private MediaAsset owned(UUID id, Authentication authentication) {
     long owner = access.current(authentication).getId();
     var asset = repository.find(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));

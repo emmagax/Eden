@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Component
-@ConditionalOnProperty(name="eden.media.processing-enabled", havingValue="true")
+@ConditionalOnProperty(name="eden.media.enabled", havingValue="true")
 public class MediaWorker {
   private static final Logger LOG = LoggerFactory.getLogger(MediaWorker.class);
   private final MediaRepository repository;
