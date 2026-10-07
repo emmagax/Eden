@@ -63,5 +63,8 @@ public class S3ObjectStorage implements ObjectStorage {
       }
     }
   }
+  public void upload(String key, Path source, String contentType) {
+    client.putObject(PutObjectRequest.builder().bucket(bucket).key(key).contentType(contentType).build(), RequestBody.fromFile(source));
+  }
   @PreDestroy public void close() { client.close(); signer.close(); }
 }

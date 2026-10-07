@@ -10,4 +10,5 @@ public interface ObjectStorage {
   SignedUpload signUpload(MediaAsset asset);
   Metadata metadata(String key);
   void download(String key, Path target, long maximumBytes) throws Exception;
+  void upload(String key, Path source, String contentType);
 }

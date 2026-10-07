@@ -27,4 +27,31 @@ public class MediaRepository {
   public boolean queue(UUID id) {
     return jdbc.update("UPDATE media_assets SET state='QUEUED', updated_at=now() WHERE id=? AND state='UPLOADING'", id) == 1;
   }
+  public Optional<MediaAsset> claim() {
+    // A single atomic statement prevents two workers from claiming the same job.
+    UUID token = UUID.randomUUID();
+    jdbc.update("UPDATE media_assets SET state='FAILED', failure_code='ATTEMPTS_EXHAUSTED', updated_at=now() WHERE state='PROCESSING' AND lease_until < now() AND attempts >= 3");
+    return jdbc.query("""
+        WITH candidate AS (
+          SELECT id FROM media_assets
+          WHERE (state='QUEUED' OR (state='PROCESSING' AND lease_until < now())) AND attempts < 3
+          ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1
+        )
+        UPDATE media_assets m SET state='PROCESSING', attempts=attempts+1,
+          lease_token=?, lease_until=now()+interval '10 minutes', updated_at=now(), failure_code=NULL
+        FROM candidate c WHERE m.id=c.id RETURNING m.*
+        """, MAPPER, token).stream().findFirst();
+  }
+  public boolean ready(MediaAsset asset, String stream, String preview, double duration) {
+    return jdbc.update("""
+        UPDATE media_assets SET state='READY',stream_key=?,preview_key=?,duration_seconds=?,
+          lease_until=NULL,updated_at=now() WHERE id=? AND state='PROCESSING' AND lease_token=? AND lease_until > now()
+        """, stream, preview, duration, asset.id(), asset.leaseToken()) == 1;
+  }
+  public void fail(MediaAsset asset, String code, boolean retryable) {
+    jdbc.update("""
+        UPDATE media_assets SET state=?,failure_code=?,lease_until=NULL,updated_at=now()
+        WHERE id=? AND state='PROCESSING' AND lease_token=? AND lease_until > now()
+        """, retryable && asset.attempts() < 3 ? "QUEUED" : "FAILED", code, asset.id(), asset.leaseToken());
+  }
 }
