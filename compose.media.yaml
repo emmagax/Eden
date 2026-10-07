@@ -1,0 +1,36 @@
+services:
+  minio:
+    build:
+      context: .
+      dockerfile: infra/minio.Dockerfile
+      target: server
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: eden_local
+      MINIO_ROOT_PASSWORD: eden_local_storage
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:5173
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    volumes:
+      - eden-minio-data:/data
+  minio-init:
+    build:
+      context: .
+      dockerfile: infra/minio.Dockerfile
+      target: client
+    depends_on:
+      - minio
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+          mc alias set local http://minio:9000 eden_local eden_local_storage && break
+          sleep 2
+        done
+        mc mb --ignore-existing local/eden-media
+        mc anonymous set none local/eden-media
+volumes:
+  eden-minio-data:

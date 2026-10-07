@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/auth": "http://localhost:8080",
+      "/media": "http://localhost:8080",
     },
   },
   test: {

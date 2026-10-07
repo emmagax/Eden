@@ -1,6 +1,7 @@
 package com.emmagax.eden.controller;
 
 import com.emmagax.eden.config.SecurityConfig;
+import com.emmagax.eden.config.AccountAccess;
 import com.emmagax.eden.model.Profile;
 import com.emmagax.eden.model.User;
 import com.emmagax.eden.repository.ProfileRepository;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -23,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ProfileController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, AccountAccess.class})
 class ProfileControllerTest {
 
   @Autowired
@@ -36,20 +38,20 @@ class ProfileControllerTest {
   private UserRepository userRepository;
 
   @Test
-  @WithMockUser
+  @WithMockUser(username = "emmatest")
   void createProfileReturnsExpandedProfileFields() throws Exception {
     User user = new User();
     user.setId(1L);
     user.setUsername("emmatest");
 
-    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    when(userRepository.findByUsername("emmatest")).thenReturn(Optional.of(user));
     when(profileRepository.save(any(Profile.class))).thenAnswer(invocation -> {
       Profile profile = invocation.getArgument(0);
       profile.setId(2L);
       return profile;
     });
 
-    mockMvc.perform(post("/profiles/users/1/profile")
+    mockMvc.perform(post("/profiles/users/1/profile").with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {

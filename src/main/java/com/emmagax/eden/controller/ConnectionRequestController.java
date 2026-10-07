@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import com.emmagax.eden.config.AccountAccess;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/connection-requests")
@@ -24,13 +26,15 @@ public class ConnectionRequestController {
 
     private final ConnectionRequestRepository connectionRequestRepository;
     private final ProfileRepository profileRepository;
+    private final AccountAccess access;
 
     public ConnectionRequestController(
             ConnectionRequestRepository connectionRequestRepository,
-            ProfileRepository profileRepository
+            ProfileRepository profileRepository, AccountAccess access
     ) {
         this.connectionRequestRepository = connectionRequestRepository;
         this.profileRepository = profileRepository;
+        this.access = access;
     }
 
     @GetMapping
@@ -43,12 +47,13 @@ public class ConnectionRequestController {
 
     @PostMapping
     public ConnectionRequestResponse create(
-            @Valid @RequestBody CreateConnectionRequestRequest request
+            @Valid @RequestBody CreateConnectionRequestRequest request, Authentication authentication
     ) {
         Profile fromProfile = profileRepository.findById(request.fromProfileId())
-                .orElseThrow(() -> new RuntimeException("From profile not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
         Profile toProfile = profileRepository.findById(request.toProfileId())
-                .orElseThrow(() -> new RuntimeException("To profile not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
+        access.requireOwner(authentication, fromProfile.getUser());
 
         ConnectionRequest connectionRequest = new ConnectionRequest();
         connectionRequest.setFromProfile(fromProfile);

@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Optional;
 import java.time.LocalDateTime;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,7 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.ArgumentMatchers.anyString;
 
 @WebMvcTest(controllers = { AuthController.class, UserController.class })
-@Import({ SecurityConfig.class, EdenUserDetailsService.class })
+@org.springframework.test.context.TestPropertySource(properties="eden.auth.expose-flow-tokens=true")
+@Import({ SecurityConfig.class, EdenUserDetailsService.class, AccountAccess.class })
 class SecurityConfigTest {
 
   @Autowired
@@ -37,7 +39,7 @@ class SecurityConfigTest {
   @Test
   void anonymousUsersCannotAccessProtectedEndpoints() throws Exception {
     mockMvc.perform(get("/users"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -50,7 +52,7 @@ class SecurityConfigTest {
       return user;
     });
 
-    mockMvc.perform(post("/auth/register")
+    mockMvc.perform(post("/auth/register").with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -89,7 +91,7 @@ class SecurityConfigTest {
   @Test
   @WithMockUser
   void logoutReturnsNoContent() throws Exception {
-    mockMvc.perform(post("/auth/logout"))
+    mockMvc.perform(post("/auth/logout").with(csrf()))
         .andExpect(status().isNoContent());
   }
 
@@ -104,7 +106,7 @@ class SecurityConfigTest {
     when(userRepository.findByUsername("securitytest")).thenReturn(Optional.of(user));
     when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    mockMvc.perform(post("/auth/email-verification/request"))
+    mockMvc.perform(post("/auth/email-verification/request").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.token").isString());
   }
@@ -121,7 +123,7 @@ class SecurityConfigTest {
     when(userRepository.findByEmailVerificationTokenHash(anyString())).thenReturn(Optional.of(user));
     when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    mockMvc.perform(post("/auth/email-verification/confirm")
+    mockMvc.perform(post("/auth/email-verification/confirm").with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -141,7 +143,7 @@ class SecurityConfigTest {
     when(userRepository.findByEmail("security-test@example.com")).thenReturn(Optional.of(user));
     when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    mockMvc.perform(post("/auth/password-reset/request")
+    mockMvc.perform(post("/auth/password-reset/request").with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -165,7 +167,7 @@ class SecurityConfigTest {
     when(userRepository.findByPasswordResetTokenHash(anyString())).thenReturn(Optional.of(user));
     when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    mockMvc.perform(post("/auth/password-reset/confirm")
+    mockMvc.perform(post("/auth/password-reset/confirm").with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {

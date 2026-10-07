@@ -2,7 +2,9 @@ package com.emmagax.eden.dto;
 
 public class LoginRequest {
 
+    @jakarta.validation.constraints.NotBlank
     private String identifier;
+    @jakarta.validation.constraints.NotBlank
     private String password;
 
     public LoginRequest() {}

@@ -22,7 +22,13 @@ jobs:
           java-version: "21"
           cache: maven
       
+      - name: Install audio tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Run backend tests
+        env:
+          EDEN_TEST_FFMPEG: /usr/bin/ffmpeg
+          EDEN_TEST_FFPROBE: /usr/bin/ffprobe
         run: ./mvnw --batch-mode --no-transfer-progress verify
 
 

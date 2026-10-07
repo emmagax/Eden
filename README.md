@@ -1,5 +1,7 @@
 # Eden
 
+See [the identity and media review guide](docs/IDENTITY_MEDIA_REVIEW.md) for per-issue changes, testing steps, and optional local audio storage setup.
+
 Eden is a human-made music network where listeners discover artists, follow their work, buy music directly, and join paid artist communities. It serves listeners, artists, bands, DJs, producers, and engineers without forcing each person into a single account type.
 
 ## Prerequisites

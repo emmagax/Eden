@@ -1,8 +1,10 @@
 import { useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
 import { login, type AuthUser } from "../api/auth";
+import { useAuth } from "../auth/AuthContext";
 
 function LoginPage() {
+  const session = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -27,6 +29,7 @@ function LoginPage() {
         password,
       });
       setCurrentUser(user);
+      session?.signIn(user);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to sign in.");
     } finally {
