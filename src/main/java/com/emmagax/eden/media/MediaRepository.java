@@ -24,4 +24,7 @@ public class MediaRepository {
   public Optional<MediaAsset> find(UUID id) {
     return jdbc.query("SELECT * FROM media_assets WHERE id=?", MAPPER, id).stream().findFirst();
   }
+  public boolean queue(UUID id) {
+    return jdbc.update("UPDATE media_assets SET state='QUEUED', updated_at=now() WHERE id=? AND state='UPLOADING'", id) == 1;
+  }
 }

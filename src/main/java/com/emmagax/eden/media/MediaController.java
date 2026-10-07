@@ -40,6 +40,21 @@ public class MediaController {
     repository.insert(asset);
     return new UploadResponse(id, signed.url(), signed.headers(), 600);
   }
+  @PostMapping("/{id}/complete")
+  public StatusResponse complete(@PathVariable UUID id, Authentication authentication) {
+    var asset = owned(id, authentication);
+    if (!asset.state().equals("UPLOADING")) return status(asset);
+    ObjectStorage.Metadata metadata;
+    try { metadata = storage.metadata(asset.uploadKey()); }
+    catch (software.amazon.awssdk.services.s3.model.S3Exception exception) {
+      if (exception.statusCode() == 404) throw new ResponseStatusException(HttpStatus.CONFLICT, "Upload not found");
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Storage is unavailable");
+    }
+    if (metadata.size() != asset.sizeBytes() || !asset.contentType().equals(metadata.contentType()))
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Uploaded size or content type differs from the request");
+    repository.queue(id);
+    return status(repository.find(id).orElseThrow());
+  }
   @GetMapping("/{id}")
   public StatusResponse get(@PathVariable UUID id, Authentication authentication) { return status(owned(id, authentication)); }
   private MediaAsset owned(UUID id, Authentication authentication) {

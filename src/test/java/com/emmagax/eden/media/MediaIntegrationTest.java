@@ -57,6 +57,17 @@ class MediaIntegrationTest {
         .andExpect(status().isCreated()).andExpect(jsonPath("$.uploadUrl").value("https://storage.test/signed"));
     verify(storage).signUpload(argThat(media -> media.ownerId() == owner.getId()));
   }
+  @Test void completionAndPlaybackRequireOwnerAndReadyState() throws Exception {
+    User owner = account(), other = account(); var asset = asset(owner);
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(other.getUsername())).with(csrf())).andExpect(status().isNotFound());
+    when(storage.metadata(asset.uploadKey())).thenReturn(new ObjectStorage.Metadata(17, "audio/wav"));
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf())).andExpect(status().isBadRequest());
+    assertEquals("UPLOADING", repository.find(asset.id()).orElseThrow().state());
+    when(storage.metadata(asset.uploadKey())).thenReturn(new ObjectStorage.Metadata(16, "audio/wav"));
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf()))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("QUEUED"));
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf())).andExpect(status().isOk());
+  }
   @Test void schemaEnforcesMediaAndCatalogConstraints() {
     var asset = asset(account());
     assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
