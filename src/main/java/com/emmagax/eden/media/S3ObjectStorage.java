@@ -46,5 +46,29 @@ public class S3ObjectStorage implements ObjectStorage {
         .signatureDuration(Duration.ofMinutes(10)).putObjectRequest(put).build());
     return new SignedUpload(signed.url().toString(), signed.signedHeaders());
   }
+  public Metadata metadata(String key) {
+    var head = client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
+    return new Metadata(head.contentLength(), head.contentType());
+  }
+  public void download(String key, Path target, long maximumBytes) throws Exception {
+    try (var input = client.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build());
+         var output = Files.newOutputStream(target)) {
+      long count = 0;
+      byte[] buffer = new byte[8192];
+      int read;
+      while ((read = input.read(buffer)) != -1) {
+        count += read;
+        if (count > maximumBytes) throw new MediaValidationException("SIZE_MISMATCH");
+        output.write(buffer, 0, read);
+      }
+    }
+  }
+  public void upload(String key, Path source, String contentType) {
+    client.putObject(PutObjectRequest.builder().bucket(bucket).key(key).contentType(contentType).build(), RequestBody.fromFile(source));
+  }
+  public String signDownload(String key) {
+    return signer.presignGetObject(GetObjectPresignRequest.builder().signatureDuration(Duration.ofMinutes(5))
+        .getObjectRequest(GetObjectRequest.builder().bucket(bucket).key(key).build()).build()).url().toString();
+  }
   @PreDestroy public void close() { client.close(); signer.close(); }
 }

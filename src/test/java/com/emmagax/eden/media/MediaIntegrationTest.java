@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class MediaIntegrationTest {
   @Container @ServiceConnection static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
   @MockitoBean ObjectStorage storage;
+  @MockitoBean AudioProcessor processor;
+  @MockitoBean MediaWorker worker;
   @Autowired MediaRepository repository;
   @Autowired JdbcTemplate jdbc;
   @Autowired MockMvc mvc;
@@ -56,6 +58,39 @@ class MediaIntegrationTest {
     mvc.perform(post("/media/uploads").with(user(owner.getUsername())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isCreated()).andExpect(jsonPath("$.uploadUrl").value("https://storage.test/signed"));
     verify(storage).signUpload(argThat(media -> media.ownerId() == owner.getId()));
+  }
+  @Test void completionAndPlaybackRequireOwnerAndReadyState() throws Exception {
+    User owner = account(), other = account(); var asset = asset(owner);
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(other.getUsername())).with(csrf())).andExpect(status().isNotFound());
+    mvc.perform(get("/media/" + asset.id() + "/playback").with(user(other.getUsername()))).andExpect(status().isNotFound());
+    mvc.perform(get("/media/" + asset.id() + "/playback").with(user(owner.getUsername()))).andExpect(status().isConflict());
+    when(storage.metadata(asset.uploadKey())).thenReturn(new ObjectStorage.Metadata(17, "audio/wav"));
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf())).andExpect(status().isBadRequest());
+    assertEquals("UPLOADING", repository.find(asset.id()).orElseThrow().state());
+    when(storage.metadata(asset.uploadKey())).thenReturn(new ObjectStorage.Metadata(16, "audio/wav"));
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf()))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.state").value("QUEUED"));
+    mvc.perform(post("/media/" + asset.id() + "/complete").with(user(owner.getUsername())).with(csrf())).andExpect(status().isOk());
+    var claimed = repository.claim().orElseThrow();
+    assertTrue(repository.ready(claimed, "processed/stream", null, 10));
+    when(storage.signDownload("processed/stream")).thenReturn("https://storage.test/playback");
+    mvc.perform(get("/media/" + asset.id() + "/playback").with(user(owner.getUsername())))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.streamUrl").value("https://storage.test/playback"));
+  }
+  @Test void leasesFenceStaleWorkersAndRetriesAreBounded() {
+    var asset = asset(account()); assertTrue(repository.queue(asset.id())); assertFalse(repository.queue(asset.id()));
+    var first = repository.claim().orElseThrow(); assertTrue(repository.claim().isEmpty());
+    jdbc.update("UPDATE media_assets SET lease_until=now()-interval '1 second' WHERE id=?", asset.id());
+    var second = repository.claim().orElseThrow();
+    assertNotEquals(first.leaseToken(), second.leaseToken());
+    assertFalse(repository.ready(first, "stale", null, 1));
+    repository.fail(first, "STALE_FAILURE", false);
+    assertEquals("PROCESSING", repository.find(asset.id()).orElseThrow().state());
+    repository.fail(second, "RETRY", true);
+    var third = repository.claim().orElseThrow();
+    repository.fail(third, "RETRY", true);
+    assertEquals("FAILED", repository.find(asset.id()).orElseThrow().state());
+    assertTrue(repository.claim().isEmpty());
   }
   @Test void schemaEnforcesMediaAndCatalogConstraints() {
     var asset = asset(account());
