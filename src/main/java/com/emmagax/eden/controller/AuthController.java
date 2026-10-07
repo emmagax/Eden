@@ -42,14 +42,17 @@ public class AuthController {
   private final AuthenticationManager authenticationManager;
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final boolean exposeFlowTokens;
 
   public AuthController(
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
-      AuthenticationManager authenticationManager) {
+      AuthenticationManager authenticationManager,
+      @org.springframework.beans.factory.annotation.Value("${eden.auth.expose-flow-tokens:false}") boolean exposeFlowTokens) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
+    this.exposeFlowTokens = exposeFlowTokens;
   }
 
   @PostMapping("/register")
@@ -90,6 +93,8 @@ public class AuthController {
     context.setAuthentication(authentication);
     SecurityContextHolder.setContext(context);
 
+    if (request.getSession(false) != null) request.changeSessionId();
+
     request.getSession(true).setAttribute(
         HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
         context);
@@ -109,6 +114,11 @@ public class AuthController {
     return new AuthUserResponse(user.getId(), user.getEmail(), user.getUsername());
   }
 
+  @GetMapping("/csrf")
+  public org.springframework.security.web.csrf.CsrfToken csrf(org.springframework.security.web.csrf.CsrfToken token) {
+    return token;
+  }
+
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(HttpServletRequest request) {
     HttpSession session = request.getSession(false);
@@ -124,6 +134,7 @@ public class AuthController {
 
   @PostMapping("/email-verification/request")
   public AuthTokenResponse requestEmailVerification(Authentication authentication) {
+    requireDevelopmentTokenDelivery();
     User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
 
     String token = generateToken();
@@ -160,6 +171,7 @@ public class AuthController {
   @PostMapping("/password-reset/request")
   public AuthTokenResponse requestPasswordReset(
       @Valid @RequestBody PasswordResetRequest request) {
+    requireDevelopmentTokenDelivery();
     User user = userRepository.findByEmail(request.identifier())
         .or(() -> userRepository.findByUsername(request.identifier()))
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid account"));
@@ -199,6 +211,11 @@ public class AuthController {
     byte[] bytes = new byte[32];
     new SecureRandom().nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+  }
+
+  private void requireDevelopmentTokenDelivery() {
+    if (!exposeFlowTokens) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+        "Email delivery is not configured");
   }
 
   private String hashToken(String token) {

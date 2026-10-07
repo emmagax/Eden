@@ -5,25 +5,25 @@ import com.emmagax.eden.dto.PublicUserResponse;
 import com.emmagax.eden.model.Profile;
 import com.emmagax.eden.model.User;
 import com.emmagax.eden.repository.ProfileRepository;
-import com.emmagax.eden.repository.UserRepository;
 import org.springframework.web.bind.annotation.*;
 import com.emmagax.eden.dto.CreateProfileRequest;
 import com.emmagax.eden.dto.UpdateProfileRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import com.emmagax.eden.config.AccountAccess;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/profiles")
 public class ProfileController {
 
   private final ProfileRepository profileRepository;
-  private final UserRepository userRepository;
+  private final AccountAccess access;
 
   public ProfileController(
-      ProfileRepository profileRepository,
-      UserRepository userRepository) {
+      ProfileRepository profileRepository, AccountAccess access) {
     this.profileRepository = profileRepository;
-    this.userRepository = userRepository;
+    this.access = access;
   }
 
   @GetMapping
@@ -34,9 +34,10 @@ public class ProfileController {
   @PostMapping("/users/{userId}/profile")
   public ProfileResponse create(
       @PathVariable Long userId,
-      @Valid @RequestBody CreateProfileRequest request) {
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("User not found"));
+      @Valid @RequestBody CreateProfileRequest request, Authentication authentication) {
+    User user = access.current(authentication);
+    if (!user.getId().equals(userId))
+      throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN);
 
     Profile profile = new Profile();
     profile.setUser(user);
@@ -57,9 +58,10 @@ public class ProfileController {
   @PutMapping("/{profileId}")
   public ProfileResponse update(
       @PathVariable Long profileId,
-      @Valid @RequestBody UpdateProfileRequest request) {
+      @Valid @RequestBody UpdateProfileRequest request, Authentication authentication) {
     Profile profile = profileRepository.findById(profileId)
-        .orElseThrow(() -> new RuntimeException("Profile not found"));
+        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
+    access.requireOwner(authentication, profile.getUser());
 
     profile.setArtistName(request.artistName());
     profile.setHandle(request.handle());

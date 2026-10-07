@@ -13,5 +13,5 @@ afterEach(() => {
 });
 
 afterAll(() => {
-  server.resetHandlers();
+  server.close();
 });
