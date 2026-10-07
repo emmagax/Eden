@@ -21,8 +21,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/email-verification/confirm",
                     "/auth/password-reset/request", "/auth/password-reset/confirm")
                 .permitAll()
+                .requestMatchers(HttpMethod.GET, "/auth/csrf").permitAll()
                 .anyRequest().authenticated())
-        .csrf(csrf -> csrf.disable());
+        .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, exception) -> response.sendError(401)))
+        .requestCache(cache -> cache.disable());
     return http.build();
   }
 

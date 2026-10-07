@@ -21,6 +21,13 @@ type ApiErrorResponse = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
+export async function csrfHeaders(): Promise<Record<string, string>> {
+  const response = await fetch(`${API_BASE_URL}/auth/csrf`, { credentials: "include" });
+  if (!response.ok) throw new Error("Unable to prepare a secure request.");
+  const token = await response.json() as { headerName: string; token: string };
+  return { [token.headerName]: token.token };
+}
+
 export async function register(request: RegisterRequest): Promise<AuthUser> {
   return sendAuthRequest("/auth/register", request);
 }
@@ -34,6 +41,7 @@ async function sendAuthRequest<TRequest>(path: string, request: TRequest): Promi
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...await csrfHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(request),
